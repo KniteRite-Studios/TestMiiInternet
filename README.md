@@ -1,0 +1,1 @@
+TestMiiInternet is a (WIP) Homebrew Application for the Nintendo Wii that will allow the user to test the Data Transfer rates (DOWNLOAD, UPLOAD), and Ping rate for their Nintendo Wii Console to their selected Internet Connection.
