@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<app version="1">
+  <name>Wii Speed Test</name>
+  <coder>Masaru Mamoru</coder>
+  <version>1.0</version>
+  <release_date>20250725000000</release_date>
+  <short_description>A basic Wii Internet Speed Test.</short_description>
+  <long_description>Measures download and upload speeds on the Nintendo Wii.</long_description>
+</app>
