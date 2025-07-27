@@ -17,7 +17,7 @@ static GXRModeObj *rmode = NULL;
 //---------------------------------------------------------------------------------
 u8 HWButton = SYS_RETURNTOMENU; // Initialize to a safe default
 
-// Button Definitions for termination. 
+// Button Definitions for termination.
 void WiiResetPressed(u32 irq, void* ctx) { printf("\nboop! you pressed the reset button!"); }
 void WiiPowerPressed() { printf("\nboop! you pressed the power button!");}
 void WiimotePowerPressed(s32 chan) { HWButton = SYS_POWEROFF_STANDBY; }
@@ -47,16 +47,39 @@ int main(int argc, char **argv) {
     printf("\x1b[2;0H"); // Move cursor to row 2, column 0
 
     // --- NETWORK INIT AFTER VIDEO/CONSOLE ---
-    char ip_str[16] = {0};
-	char gateway[16] = {0};
-	char netmask[16] = {0};       // Buffer to hold the IP address as a string (e.g., "192.168.1.100\0")
+    char ip_str[16] = {0};// Buffer to hold the IP address as a string (e.g., "192.168.1.100\0")
+    char gateway[16] = {0};
+    char netmask[16] = {0};
+    //MORE NETWORK INFO
+    char mac_str[18] = {0}; // Buffer to hold the MAC address as a string (e.g., "00:1A:2B:3C:4D:5E\0")
+
     // --- APP INFO ---
+
+
     printf("TestMIiInternet. Internet Speed Test for Wii\n");
     printf("Made by KniteRite Studios. 2025\n\n");
     printf("Press HOME to exit.\n");
     printf("=========================================\n");
     printf("Initializing network...\n\n"); // Print to console for debugging
     s32 net_result = if_config(ip_str, netmask, gateway, TRUE, 2);
+
+    // Function to get the Wii's MAC address as a string
+    u8 mac_address_bytes[6] = {0}; // Declare a u8 array to hold the MAC bytes
+
+    // Get MAC address and store in mac_str
+    // The net_get_mac_address function directly populates the u8 array.
+    // then format it into the mac_str.
+    if (net_get_mac_address(mac_address_bytes) == 0) { // Pass the u8 array here
+        snprintf(mac_str, sizeof(mac_str), "%02X:%02X:%02X:%02X:%02X:%02X",
+                 mac_address_bytes[0], mac_address_bytes[1], mac_address_bytes[2],
+                 mac_address_bytes[3], mac_address_bytes[4], mac_address_bytes[5]);
+    } else {
+        strncpy(mac_str, "Unavailable", sizeof(mac_str));
+        mac_str[sizeof(mac_str) - 1] = '\0';
+    }
+
+    const char *mac_result = mac_str; // While unused, removing it seems to cause problems. tf2 coconut lmao.
+
     if (net_result == 0) {
         // Network initialized successfully. Get the assigned IP address.
         // Convert the binary IP address to a human-readable string.
@@ -70,6 +93,19 @@ int main(int argc, char **argv) {
     // Print network information
     printf("Network Information:\n\n");
     printf("Wii IP Address: %s\n", ip_str);
+    printf("Gateway: %s\n", gateway);
+    printf("Netmask: %s\n", netmask);
+    printf("MAC Address: %s\n", mac_str);
+
+
+// Now, we test the actual network speed. Here we go.
+
+    printf("\nTesting Network NUMBER.\n"); //add conn number here.
+    printf("=========================================\n");
+    // TO DO: obtain connection number from the Wii settings.
+
+
+
 
     while(1) {
         // Call WPAD_ScanPads each loop, this reads the latest controller states
@@ -82,7 +118,7 @@ int main(int argc, char **argv) {
         // Wait for the next frame
         VIDEO_WaitVSync();
 
-        //  Terminate the app.
+        // Terminate the app.
         if (pressed & WPAD_BUTTON_HOME) {
             printf("Exiting...\n");
             VIDEO_WaitVSync();
