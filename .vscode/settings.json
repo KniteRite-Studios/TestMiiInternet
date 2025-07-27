@@ -1,0 +1,16 @@
+{
+    "files.associations": {
+        "socket.h": "c",
+        "gx.h": "c",
+        "inet.h": "c",
+        "in.h": "c",
+        "sockets.h": "c",
+        "string.h": "c",
+        "network.h": "c",
+        "time.h": "c",
+        "netdb.h": "c",
+        "gccore.h": "c",
+        "wpad.h": "c",
+        "gctypes.h": "c"
+    }
+}
