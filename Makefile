@@ -82,10 +82,12 @@ export HFILES := $(addsuffix .h,$(subst .,_,$(BINFILES)))
 #---------------------------------------------------------------------------------
 # build a list of include paths
 #---------------------------------------------------------------------------------
-export INCLUDE	:=	$(foreach dir,$(INCLUDES), -iquote $(CURDIR)/$(dir)) \
-					$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
-					-I$(CURDIR)/$(BUILD) \
-					-I$(LIBOGC_INC)
+# build a list of include paths
+export INCLUDE  :=  $(foreach dir,$(INCLUDES), -iquote $(CURDIR)/$(dir)) \
+                    $(foreach dir,$(LIBDIRS),-I$(dir)/include) \
+                    -I$(CURDIR)/$(BUILD) \
+                    -I$(LIBOGC_INC) \
+                    -I$(DEVKITPRO)/portlibs/wii/include # ADD THIS LINE
 
 #---------------------------------------------------------------------------------
 # build a list of library paths
