@@ -1,3 +1,9 @@
+//TestMiiInternet
+//KniteRite Studios
+//Masaru Mamoru, PR'd by Abdelali221
+//2025, July.
+//Modifyable with credit and permission.
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <gccore.h>
@@ -12,8 +18,8 @@ static GXRModeObj *rmode = NULL;
 u8 HWButton = SYS_RETURNTOMENU; // Initialize to a safe default
 
 // Button Definitions for termination. 
-void WiiResetPressed(u32 irq, void* ctx) { HWButton = SYS_RETURNTOMENU; }
-void WiiPowerPressed() { HWButton = SYS_POWEROFF_STANDBY;}
+void WiiResetPressed(u32 irq, void* ctx) { printf("\nboop! you pressed the reset button!"); }
+void WiiPowerPressed() { printf("\nboop! you pressed the power button!");}
 void WiimotePowerPressed(s32 chan) { HWButton = SYS_POWEROFF_STANDBY; }
 
 int main(int argc, char **argv) {
@@ -41,21 +47,20 @@ int main(int argc, char **argv) {
     printf("\x1b[2;0H"); // Move cursor to row 2, column 0
 
     // --- NETWORK INIT AFTER VIDEO/CONSOLE ---
-    struct in_addr hostip; // Structure to hold the IP address
-    char ip_str[16];       // Buffer to hold the IP address as a string (e.g., "192.168.1.100\0")
-    s32 net_result = net_init();
+    char ip_str[16] = {0};
+	char gateway[16] = {0};
+	char netmask[16] = {0};       // Buffer to hold the IP address as a string (e.g., "192.168.1.100\0")
     // --- APP INFO ---
     printf("TestMIiInternet. Internet Speed Test for Wii\n");
-    printf("Made by KniteRite Studios. 2025\n");
+    printf("Made by KniteRite Studios. 2025\n\n");
     printf("Press HOME to exit.\n");
-
-    printf("Initializing network...\n"); // Print to console for debugging
+    printf("=========================================\n");
+    printf("Initializing network...\n\n"); // Print to console for debugging
+    s32 net_result = if_config(ip_str, netmask, gateway, TRUE, 2);
     if (net_result == 0) {
         // Network initialized successfully. Get the assigned IP address.
-        hostip = *(struct in_addr *) net_gethostip();
         // Convert the binary IP address to a human-readable string.
-        strcpy(ip_str, inet_ntoa(hostip));
-        printf("Network initialized.\n"); // Debug print
+        printf("Network initialized.\n\n"); // Debug print
     } else {
         // Network initialization failed.
         strcpy(ip_str, "Failed"); // Indicate failure
@@ -63,7 +68,7 @@ int main(int argc, char **argv) {
     }
 
     // Print network information
-    printf("Network Information:\n");
+    printf("Network Information:\n\n");
     printf("Wii IP Address: %s\n", ip_str);
 
     while(1) {
