@@ -10,6 +10,7 @@
 #include <wiiuse/wpad.h>
 #include <network.h>     // For net_init(), net_gethostip(), etc.
 #include <string.h>      // For strcpy()
+#include <ogc/isfs.h> // For ISFS_Initialize and ISFS file access
 
 static void *xfb = NULL;
 static GXRModeObj *rmode = NULL;
@@ -98,11 +99,52 @@ int main(int argc, char **argv) {
     printf("MAC Address: %s\n", mac_str);
 
 
-// Now, we test the actual network speed. Here we go.
 
-    printf("\nTesting Network NUMBER.\n"); //add conn number here.
+    // READ ACTIVE CONNECTION NUMBER FROM config.dat (ISFS)
+     // Initialize ISFS for NAND file access
+    ISFS_Initialize();
+    int active_conn = -1;
+    FILE *fcfg = fopen("isfs:/shared2/sys/net/02/config.dat", "rb");
+    if (fcfg) {
+        unsigned char buf[0x1300] = {0};
+        size_t read = fread(buf, 1, sizeof(buf), fcfg);
+        fclose(fcfg);
+        if (read >= 0x1240 + 1) {
+            unsigned char c1 = buf[0x0008];
+            unsigned char c2 = buf[0x0924];
+            unsigned char c3 = buf[0x1240];
+            if (c1 == 0xA6 || c1 == 0xA7) {
+                active_conn = 1;
+            } else if (c2 == 0xA6 || c2 == 0xA7) {
+                active_conn = 2;
+            } else if (c3 == 0xA6 || c3 == 0xA7) {
+                active_conn = 3;
+            }
+        }
+    }
+    if (active_conn > 0) {
+        printf("\nTesting Network Connection %d.\n", active_conn);
+    } else {
+        //Check for CRASH or no usable connections
+        unsigned char c1 = 0, c2 = 0, c3 = 0;
+        FILE *fcfg2 = fopen("isfs:/shared2/sys/net/02/config.dat", "rb");
+        if (fcfg2) {
+            unsigned char buf2[0x1300] = {0};
+            size_t read2 = fread(buf2, 1, sizeof(buf2), fcfg2);
+            fclose(fcfg2);
+            if (read2 >= 0x1240 + 1) {
+                c1 = buf2[0x0008];
+                c2 = buf2[0x0924];
+                c3 = buf2[0x1240];
+            }
+        }
+        if (c1 == 0x00 && c2 == 0x00 && c3 == 0x00) {
+            printf("\nNo Usable Connections!\n");
+        } else {
+            printf("\nCRASH!\n");
+        }
+    }
     printf("=========================================\n");
-    // TO DO: obtain connection number from the Wii settings.
 
 
 
