@@ -6,11 +6,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <gccore.h>
 #include <wiiuse/wpad.h>
 #include <network.h>     // For net_init(), net_gethostip(), etc.
 #include <string.h>      // For strcpy()
 #include <ogc/isfs.h> // For ISFS_Initialize and ISFS file access
+
+static fstats filest __attribute__((aligned(32))); 
 
 static void *xfb = NULL;
 static GXRModeObj *rmode = NULL;
@@ -19,9 +22,17 @@ static GXRModeObj *rmode = NULL;
 u8 HWButton = SYS_RETURNTOMENU; // Initialize to a safe default
 
 // Button Definitions for termination.
-void WiiResetPressed(u32 irq, void* ctx) { printf("\nboop! you pressed the reset button!"); }
-void WiiPowerPressed() { printf("\nboop! you pressed the power button!");}
-void WiimotePowerPressed(s32 chan) { HWButton = SYS_POWEROFF_STANDBY; }
+void WiiResetPressed(u32 irq, void* ctx) { exit(0); }
+void WiiPowerPressed() { exit(0);}
+void WiimotePowerPressed(s32 chan) { exit(0); }
+
+void POSCursor(uint8_t X, uint8_t Y) {
+	printf("\x1b[%d;%dH", Y, X);
+}
+
+void ClearScreen() {
+	printf("\x1b[2J");
+}
 
 int main(int argc, char **argv) {
     //---------------------------------------------------------------------------------
@@ -49,8 +60,6 @@ int main(int argc, char **argv) {
 
     // --- NETWORK INIT AFTER VIDEO/CONSOLE ---
     char ip_str[16] = {0};// Buffer to hold the IP address as a string (e.g., "192.168.1.100\0")
-    char gateway[16] = {0};
-    char netmask[16] = {0};
     //MORE NETWORK INFO
     char mac_str[18] = {0}; // Buffer to hold the MAC address as a string (e.g., "00:1A:2B:3C:4D:5E\0")
 
@@ -62,7 +71,7 @@ int main(int argc, char **argv) {
     printf("Press HOME to exit.\n");
     printf("=========================================\n");
     printf("Initializing network...\n\n"); // Print to console for debugging
-    s32 net_result = if_config(ip_str, netmask, gateway, TRUE, 2);
+    s32 net_result = if_config(ip_str, NULL, NULL, TRUE, 2);
 
     // Function to get the Wii's MAC address as a string
     u8 mac_address_bytes[6] = {0}; // Declare a u8 array to hold the MAC bytes
@@ -79,7 +88,6 @@ int main(int argc, char **argv) {
         mac_str[sizeof(mac_str) - 1] = '\0';
     }
 
-    const char *mac_result = mac_str; // While unused, removing it seems to cause problems. tf2 coconut lmao.
 
     if (net_result == 0) {
         // Network initialized successfully. Get the assigned IP address.
@@ -94,58 +102,70 @@ int main(int argc, char **argv) {
     // Print network information
     printf("Network Information:\n\n");
     printf("Wii IP Address: %s\n", ip_str);
-    printf("Gateway: %s\n", gateway);
-    printf("Netmask: %s\n", netmask);
     printf("MAC Address: %s\n", mac_str);
-
-
 
     // READ ACTIVE CONNECTION NUMBER FROM config.dat (ISFS)
      // Initialize ISFS for NAND file access
-    ISFS_Initialize();
-    int active_conn = -1;
-    FILE *fcfg = fopen("isfs:/shared2/sys/net/02/config.dat", "rb");
-    if (fcfg) {
-        unsigned char buf[0x1300] = {0};
-        size_t read = fread(buf, 1, sizeof(buf), fcfg);
-        fclose(fcfg);
-        if (read >= 0x1240 + 1) {
-            unsigned char c1 = buf[0x0008];
-            unsigned char c2 = buf[0x0924];
-            unsigned char c3 = buf[0x1240];
-            if (c1 == 0xA6 || c1 == 0xA7) {
-                active_conn = 1;
-            } else if (c2 == 0xA6 || c2 == 0xA7) {
-                active_conn = 2;
-            } else if (c3 == 0xA6 || c3 == 0xA7) {
-                active_conn = 3;
-            }
-        }
+    if(ISFS_Initialize() != ISFS_OK) {
+        printf("Failed to initialize ISFS.\n");
+        exit(0);
     }
-    if (active_conn > 0) {
-        printf("\nTesting Network Connection %d.\n", active_conn);
-    } else {
-        //Check for CRASH or no usable connections
-        unsigned char c1 = 0, c2 = 0, c3 = 0;
-        FILE *fcfg2 = fopen("isfs:/shared2/sys/net/02/config.dat", "rb");
-        if (fcfg2) {
-            unsigned char buf2[0x1300] = {0};
-            size_t read2 = fread(buf2, 1, sizeof(buf2), fcfg2);
-            fclose(fcfg2);
-            if (read2 >= 0x1240 + 1) {
-                c1 = buf2[0x0008];
-                c2 = buf2[0x0924];
-                c3 = buf2[0x1240];
-            }
-        }
-        if (c1 == 0x00 && c2 == 0x00 && c3 == 0x00) {
-            printf("\nNo Usable Connections!\n");
-        } else {
-            printf("\nCRASH!\n");
-        }
-    }
-    printf("=========================================\n");
 
+    int active_conn = -1;
+    s32 fd = ISFS_Open("/shared2/sys/net/02/config.dat", ISFS_OPEN_READ);
+    int stat = ISFS_GetFileStats(fd, &filest);
+    if (!(fd >= 0 && stat == ISFS_OK)) {
+        printf("%d", stat);
+    }
+
+    if (fd) { 
+   
+        u8 c1 __attribute__((aligned(32))) = 0;
+        u8 c2 __attribute__((aligned(32))) = 0;
+        u8 c3 __attribute__((aligned(32))) = 0;
+
+        ISFS_Seek(fd, 8, 0);
+        int ret = ISFS_Read(fd, &c1,1);
+
+        if (ret < 0) {
+            printf("Error reading byte 8: %d\n", ret);
+            ISFS_Close(fd);
+            exit(0);
+        }
+
+        ISFS_Seek(fd, 2340, 0);
+        ret = ISFS_Read(fd, &c2, 1);
+
+        if (ret < 0) {
+            printf("Error reading byte 8: %d\n", ret);
+            ISFS_Close(fd);
+            exit(0);
+        }
+
+        ISFS_Seek(fd, 4672, 0);
+        ret = ISFS_Read(fd, &c3, 1);
+
+        if (ret < 0) {
+            printf("Error reading byte 8: %d\n", ret);
+            ISFS_Close(fd);
+            exit(0);
+        }
+
+        if (c1 > 0xA0) {
+            active_conn = 1;
+        } else if (c2 > 0xA0) {
+            active_conn = 2;
+        } else if (c3 > 0xA0) {
+            active_conn = 3;
+        }
+
+    } else {
+        printf("Failed to open config.dat.\n");
+        exit(0);
+    }    
+
+    printf("=========================================\n");
+    printf("Testing Connection %d...\n", active_conn);
 
 
 
@@ -164,8 +184,9 @@ int main(int argc, char **argv) {
         if (pressed & WPAD_BUTTON_HOME) {
             printf("Exiting...\n");
             VIDEO_WaitVSync();
-            SYS_ResetSystem(HWButton, 0, 0);
+            ISFS_Deinitialize();
+            WII_ReturnToMenu();
+            exit(0);//END OF LINE
         }
     }
-    return 0; // END OF LINE
 }
