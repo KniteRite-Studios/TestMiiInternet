@@ -1,10 +1,9 @@
+#include "curlutils.h"
 #include <curl/curl.h>
 #include <stdio.h>
 #include <stdbool.h>
 
 static int curl_initialized = 0;
-
-
 
 void curl_global_setup(void) {
     if (!curl_initialized) {
@@ -50,4 +49,3 @@ double do_curl_ping(const char *url, long *http_code) {
     }
     return ping_time_ms;
 }
-

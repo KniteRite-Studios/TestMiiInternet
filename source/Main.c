@@ -14,6 +14,9 @@
 #include <unistd.h>    
 #include <wiisocket.h>
 
+#include "curlutils.h"
+
+
 // External function declarations for functions defined in curlping.c
 extern void curl_global_setup(void);
 extern void curl_global_cleanup_wrapper(void);
