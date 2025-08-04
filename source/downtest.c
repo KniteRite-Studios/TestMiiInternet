@@ -3,11 +3,13 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include "downtest.h"
+#include <ogc/lwp_watchdog.h>
 
 typedef struct {
-    FILE *fp;
     size_t total_bytes;
-    time_t start_time;
+    uint32_t start_time;
+    uint32_t end_time;
     int timeout_seconds;
 } download_data_t;
 
@@ -16,31 +18,31 @@ size_t write_callback_with_timeout(void *contents, size_t size, size_t nmemb, vo
     size_t realsize = size * nmemb;
     
     // Check if 10 seconds have passed
-    time_t current_time = time(NULL);
-    if (current_time - data->start_time >= data->timeout_seconds) {
+    uint32_t current_time = ticks_to_millisecs(gettime());
+    if (current_time - data->start_time >= data->timeout_seconds * 1000) {
         return 0; // Stop download
     }
-    
-    // Write to file
-    size_t written = fwrite(contents, 1, realsize, data->fp);
-    data->total_bytes += written;
-    
-    return written;
+
+    data->total_bytes += realsize;
+
+    return realsize;
 }
 
-size_t download_with_timeout(const char *url, const char *filepath, int timeout_seconds) {
+uint32_t dw_time = 0;
+
+uint32_t retrieve_dw_time() {
+    return dw_time;
+}
+
+size_t download_with_timeout(const char *url, int timeout_seconds) {
     CURL *curl;
     CURLcode res = CURLE_OK; // Initialize to prevent warning
     download_data_t data = {0};
     
     // Open file for writing
-    data.fp = fopen(filepath, "wb");
-    if (!data.fp) {
-        printf("Failed to open file for writing: %s\n", filepath);
-        return 0;
-    }
     
-    data.start_time = time(NULL);
+    
+    data.start_time = ticks_to_millisecs(gettime());
     data.timeout_seconds = timeout_seconds;
     data.total_bytes = 0;
     
@@ -50,7 +52,7 @@ size_t download_with_timeout(const char *url, const char *filepath, int timeout_
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback_with_timeout);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data);
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout_seconds + 5); // Safety margin
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout_seconds); // Safety margin
         
         // Add these SSL bypass options:
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
@@ -60,11 +62,13 @@ size_t download_with_timeout(const char *url, const char *filepath, int timeout_
         curl_easy_cleanup(curl);
     }
     
-    fclose(data.fp);
-    
     if (res != CURLE_OK && res != CURLE_WRITE_ERROR) {
         printf("cURL error: %s\n", curl_easy_strerror(res));
     }
+
+    data.end_time = ticks_to_millisecs(gettime());
+
+    dw_time = data.end_time - data.start_time;
     
     return data.total_bytes;
 }

@@ -14,6 +14,7 @@
 #include <unistd.h>    
 #include <wiisocket.h>
 #include "curlutils.h"
+#include "downtest.h"
 #include <fat.h>
 
 
@@ -91,7 +92,7 @@ int main(int argc, char **argv) {
     init_network(); // Call the helper function
 
     // --- APP INFO ---
-    printf("TestMIiInternet. Internet Speed Test for Wii\n");
+    printf("TestMiiInternet. Internet Speed Test for Wii\n");
     printf("Made by KniteRite Studios. 2025\n");
     printf("Peer Reviewed by Abdelali221.\n\n");
     printf("Press HOME to exit.\n");
@@ -168,26 +169,33 @@ int main(int argc, char **argv) {
     printf("Pinging: %s\n", PING_URL);
     
     // Call the ping function from curlping.c
+
+    double average_ping_time = 0;
     long http_code = 0;
     double ping_time_ms = do_curl_ping(PING_URL, &http_code);
 
-    if (ping_time_ms >= 0) {
-        printf("Ping time to %s: %.2f ms\n", PING_URL, ping_time_ms);
-    } else {
-        printf("Ping test failed.\n");
+    for (int i = 0; i < 4; i++) {
+        ping_time_ms = do_curl_ping(PING_URL, &http_code);
+
+        if (ping_time_ms >= 0) {
+            printf("Ping time to %s: %.2f ms\n", PING_URL, ping_time_ms / 5);
+        } else {
+            printf("Ping test failed.\n");
+        }
+        average_ping_time += ping_time_ms;
     }
+
+    printf("Average ping to %s : %.2f ms\n", PING_URL, average_ping_time / 20);
     
-    //Mount SD card
-    if (!fatInitDefault()) {
-        printf("Failed to mount SD card!\n");
-        // Use a safe fallback or skip download test
-    } else {
-        //Download Test
-        printf("Testing Download Speed... Please wait 10 seconds...\n");
-        const char *DOWNLOAD_URL = "https://www.dropbox.com/scl/fi/c687z55w1vc0k53bd6ua0/downloadtest.dat?rlkey=d1hggbavph5vckpr9kqtiz4bd&st=6up0nd1c&dl=1";
-        size_t bytes_downloaded = download_with_timeout(DOWNLOAD_URL, "sd:/downloadtest.dat", 10);
-        double download_speed = (double)bytes_downloaded / (1024.0 * 1024.0) / 10.0; // MB/s
-        printf("Download speed: %.2f MB/s\n", download_speed);
+    //Download Test
+    printf("Testing Download Speed... Please wait...\n");
+
+    const char *DOWNLOAD_URL = "https://www.dropbox.com/scl/fi/c687z55w1vc0k53bd6ua0/downloadtest.dat?rlkey=d1hggbavph5vckpr9kqtiz4bd&st=6up0nd1c&dl=1";
+
+    for (int i = 0; i < 5; i++) {
+        POSCursor(0, 25);
+        double download_speed = (double)download_with_timeout(DOWNLOAD_URL, 15) / (1024.0 * 1024.0); // MB/s
+        printf("Download speed: %.2f Mbps   \n", (download_speed * 8) / (retrieve_dw_time() / 1000));
     }
 
     // Cleanup before exiting the main loop
@@ -206,8 +214,6 @@ int main(int argc, char **argv) {
         if (pressed & WPAD_BUTTON_HOME) {
             printf("Exiting...\n");
             VIDEO_WaitVSync();
-            // All necessary cleanups are done before the loop
-            WII_ReturnToMenu(); // Return to the Wii System Menu
             exit(0); //END OF LINE
         }
     }
