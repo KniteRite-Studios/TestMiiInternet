@@ -13,8 +13,8 @@
 #include <string.h>    // For strcpy()
 #include <unistd.h>    
 #include <wiisocket.h>
-
 #include "curlutils.h"
+#include <fat.h>
 
 
 // External function declarations for functions defined in curlping.c
@@ -55,7 +55,7 @@ static void init_network() {
 // Function to de-initialize the network
 static void deinit_network() {
     net_deinit();
-    printf("Network de-initialized.\n");
+    printf("\nNetwork de-initialized.\n");
 }
 
 int main(int argc, char **argv) {
@@ -92,7 +92,8 @@ int main(int argc, char **argv) {
 
     // --- APP INFO ---
     printf("TestMIiInternet. Internet Speed Test for Wii\n");
-    printf("Made by KniteRite Studios. 2025\n\n");
+    printf("Made by KniteRite Studios. 2025\n");
+    printf("Peer Reviewed by Abdelali221.\n\n");
     printf("Press HOME to exit.\n");
     printf("=========================================\n");
     printf("Initializing network...\n\n"); // Print to console for debugging
@@ -176,6 +177,18 @@ int main(int argc, char **argv) {
         printf("Ping test failed.\n");
     }
     
+    //Mount SD card
+    if (!fatInitDefault()) {
+        printf("Failed to mount SD card!\n");
+        // Use a safe fallback or skip download test
+    } else {
+        //Download Test
+        printf("Testing Download Speed... Please wait 10 seconds...\n");
+        const char *DOWNLOAD_URL = "https://www.dropbox.com/scl/fi/c687z55w1vc0k53bd6ua0/downloadtest.dat?rlkey=d1hggbavph5vckpr9kqtiz4bd&st=6up0nd1c&dl=1";
+        size_t bytes_downloaded = download_with_timeout(DOWNLOAD_URL, "sd:/downloadtest.dat", 10);
+        double download_speed = (double)bytes_downloaded / (1024.0 * 1024.0) / 10.0; // MB/s
+        printf("Download speed: %.2f MB/s\n", download_speed);
+    }
 
     // Cleanup before exiting the main loop
     curl_global_cleanup_wrapper(); // Clean up libcurl globally
