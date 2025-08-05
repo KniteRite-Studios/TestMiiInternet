@@ -62,7 +62,7 @@ size_t download_with_timeout(const char *url, int timeout_seconds) {
         curl_easy_cleanup(curl);
     }
     
-    if (res != CURLE_OK && res != CURLE_WRITE_ERROR) {
+    if (res != CURLE_OK && res != CURLE_WRITE_ERROR && res != CURLE_OPERATION_TIMEDOUT) {
         printf("cURL error: %s\n", curl_easy_strerror(res));
     }
 
