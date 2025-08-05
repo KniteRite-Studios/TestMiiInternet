@@ -1,6 +1,6 @@
 # TestMiiInternet
 
-TestMiiInternet is a (WIP) Homebrew Application for the Nintendo Wii that allows users to test their internet connection speed directly from their console.
+TestMiiInternet is a Homebrew Application for the Nintendo Wii that allows users to test their internet connection speed directly from their console.
 ## Features
 
 - **Ping Testing**: Test latency to google.com
