@@ -21,8 +21,6 @@ TestMiiInternet is a (WIP) Homebrew Application for the Nintendo Wii that allows
 - **DevKitPro** - Nintendo Wii development environment
 - **LibOGC** - Official GameCube/Wii library
 - **cURL-WII** - HTTP/HTTPS networking library for Wii
-- **cJSON** - JSON parsing library
-
 Please ensure all dependencies are properly installed before building.
 
 ### Building
