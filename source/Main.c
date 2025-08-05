@@ -15,6 +15,7 @@
 #include <wiisocket.h>
 #include "curlutils.h"
 #include "downtest.h"
+#include "uptest.h"
 #include <fat.h>
 
 
@@ -56,7 +57,6 @@ static void init_network() {
 // Function to de-initialize the network
 static void deinit_network() {
     net_deinit();
-    printf("\nNetwork de-initialized.\n");
 }
 
 int main(int argc, char **argv) {
@@ -95,8 +95,8 @@ int main(int argc, char **argv) {
     printf("TestMiiInternet. Internet Speed Test for Wii\n");
     printf("Made by KniteRite Studios. 2025\n");
     printf("Peer Reviewed by Abdelali221.\n");
-    printf("=========================================\n\n");
-    printf("Initializing network...\n\n"); // Print to console for debugging
+    printf("=========================================\n");
+    printf("Initializing network...\n"); // Print to console for debugging
     s32 net_result = if_config(ip_str, NULL, NULL, TRUE, 2); // if_config handles net_init internally
 
     u8 mac_address_bytes[6] = {0}; // Declare a u8 array to hold the MAC bytes
@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
     }
 
     if (net_result == 0) {
-        printf("Network initialized.\n\n");
+        printf("Network initialized.\n");
     } else {
         strcpy(ip_str, "Failed");
         printf("Network initialization failed! Error: %d\n", net_result);
@@ -126,7 +126,6 @@ int main(int argc, char **argv) {
     // READ ACTIVE CONNECTION NUMBER FROM config.dat (ISFS)
     // Initialize ISFS for NAND file access
     ISFS_Initialize(); // ISFS_Initialize should be called after network init if it relies on it, or before if independent.
-                       // Placing it here as it was in your original code.
 
     int active_conn = -1;
     s32 fd = ISFS_Open("/shared2/sys/net/02/config.dat", ISFS_OPEN_READ);
@@ -172,28 +171,93 @@ int main(int argc, char **argv) {
     double average_ping_time = 0;
     long http_code = 0;
     double ping_time_ms = do_curl_ping(PING_URL, &http_code);
+    int successful_tests = 0;
 
     for (int i = 0; i < 4; i++) {
         ping_time_ms = do_curl_ping(PING_URL, &http_code);
 
         if (ping_time_ms < 0) {
             printf("Ping test failed.\n");
+        } else {
+            average_ping_time += ping_time_ms;
+            successful_tests++;
         }
-        average_ping_time += ping_time_ms;
     }
 
-    printf("Average ping to %s : %.2f ms\n", PING_URL, average_ping_time / 20);
+    int successful_ping_tests = successful_tests;
+    if (successful_tests > 0) {
+        printf("Average ping to %s: %.2f ms\n", PING_URL, average_ping_time / successful_tests);
+    } else {
+        printf("Ping tests failed.\n");
+    }
     
     //Download Test
-    printf("Testing Download Speed... Please wait up to 60 seconds...\n\n");
+    printf("\nTesting Download Speed... Please wait up to 60 seconds...\n\n");
 
     const char *DOWNLOAD_URL = "https://www.dropbox.com/scl/fi/c687z55w1vc0k53bd6ua0/downloadtest.dat?rlkey=d1hggbavph5vckpr9kqtiz4bd&st=6up0nd1c&dl=1";
+    double total_download_speed = 0;
+    int successful_download_tests = 0;
 
     for (int i = 0; i < 5; i++) {
         printf("\r"); // Move cursor to beginning of line
         double download_speed = (double)download_with_timeout(DOWNLOAD_URL, 15) / (1024.0 * 1024.0); // MB/s
-        printf("Download speed: %.2f Mbps   ", (download_speed * 8) / (retrieve_dw_time() / 1000));
+        uint32_t dw_time = retrieve_dw_time();
+        
+        if (dw_time > 0 && download_speed > 0) {
+            double download_speed_mbps = (download_speed * 8) / (dw_time / 1000);
+            total_download_speed += download_speed_mbps;
+            successful_download_tests++;
+            successful_tests++;
+            printf("Download speed: %.2f Mbps", download_speed_mbps);
+        } else {
+            printf("Download test failed.\n");
+        }
         fflush(stdout); // Force immediate output
+    }
+    
+    if (successful_download_tests > 0) {
+        printf("\nDone.\n");
+    } else {
+        printf("\nDownload tests failed.\n");
+    }
+
+    printf("\nTesting Upload Speed... Please wait up to 60 seconds...\n");
+
+    const char *UPLOAD_FILE_PATH = "uptestfile.dat";
+    double total_speed = 0;
+    int successful_upload_tests = 0;
+    
+    for (int i = 0; i < 5; i++) {
+        printf("\r"); // Move cursor to beginning of line
+        size_t bytes_sent = upload_with_timeout(UPLOAD_FILE_PATH, 15);
+        uint32_t up_time_ms = retrieve_up_time();
+        
+        // Work with whatever is actually uploaded (likely 64KB chunks)
+        if (up_time_ms > 0 && bytes_sent > 0) {
+            double upload_speed_mbps = ((double)bytes_sent * 8) / (1024.0 * 1024.0) / (up_time_ms / 1000.0);
+            total_speed += upload_speed_mbps;
+            successful_upload_tests++;
+            successful_tests++;
+        } else {
+            printf("Test %d: Failed\n", i+1);
+        }
+        fflush(stdout);
+    }
+    
+    if (successful_upload_tests > 0) {
+        printf("\nUpload Speed: %.2f Mbps\n", 
+               total_speed / successful_upload_tests);
+        printf("Done.\n");
+    } else {
+        printf("\nUpload tests failed\n");
+    }
+
+
+    if (successful_tests == 14) {
+        printf("\nPING %.2f ms | DOWN %.2f Mbps | UP %.2f Mbps\n", 
+               average_ping_time / successful_ping_tests,
+               total_download_speed / successful_download_tests,
+               total_speed / successful_upload_tests);
     }
 
     // Cleanup before exiting the main loop
@@ -201,7 +265,7 @@ int main(int argc, char **argv) {
     ISFS_Deinitialize();           // De-initialize ISFS
     deinit_network();              // De-initialize the network
 
-    printf("\nPress HOME button to exit.\n");
+    printf("Press HOME button to exit.\n");
 
     while(1) {
         WPAD_ScanPads();
