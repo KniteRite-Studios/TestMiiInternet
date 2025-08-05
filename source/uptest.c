@@ -147,8 +147,8 @@ size_t upload_with_timeout(const char *file_path, int timeout_seconds) {
     upload_data.end_time = ticks_to_millisecs(gettime());
     up_time = upload_data.end_time - upload_data.start_time;
     
-    if (res != CURLE_OK && res != CURLE_WRITE_ERROR && res != CURLE_OPERATION_TIMEDOUT) {
-        printf("Upload error: %s\n", curl_easy_strerror(res));
+    if (res != CURLE_OK && res != CURLE_WRITE_ERROR && res != CURLE_OPERATION_TIMEDOUT && res != CURLE_RECV_ERROR) {
+        printf("Upload error (%d): %s\n", res, curl_easy_strerror(res));
     }
     
     if (response.data) {
