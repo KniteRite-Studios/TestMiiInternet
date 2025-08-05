@@ -1,7 +1,7 @@
 //TestMiiInternet
 //KniteRite Studios
 //Masaru Mamoru, PR'd by Abdelali221
-//2025, July.
+//2025, August.
 //Modifyable with credit and permission.
 
 #include <gccore.h>
