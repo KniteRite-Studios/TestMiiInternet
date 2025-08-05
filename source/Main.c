@@ -151,9 +151,9 @@ int main(int argc, char **argv) {
         ret = ISFS_Read(fd, &c3, 1);
         if (ret < 0) { printf("Error reading byte 4672: %d\n", ret); ISFS_Close(fd); exit(0); }
 
-        if (c1 > 0xA0) { active_conn = 1; } 
-        else if (c2 > 0xA0) { active_conn = 2; } 
-        else if (c3 > 0xA0) { active_conn = 3; }
+        if (c1 >= 0xA0) { active_conn = 1; } 
+        else if (c2 >= 0xA0) { active_conn = 2; } 
+        else if (c3 >= 0xA0) { active_conn = 3; }
         ISFS_Close(fd); // Close the file descriptor after reading
     } else {
         printf("Failed to open config.dat. FD: %d\n", fd); // More descriptive error
