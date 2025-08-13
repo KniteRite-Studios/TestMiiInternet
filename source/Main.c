@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
         IOS_Close(fd);
 
         for (int i = 0; i < 3; i++) {
-            if (netconfig[8 + (i * 0x91c)] & 0x80) {
+            if ((netconfig[8 + (i * 0x91c)] & 0xA0) == 0xA0) {
                 active_conn = i + 1;
                 break;
             }
