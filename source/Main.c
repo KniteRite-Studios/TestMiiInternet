@@ -222,13 +222,12 @@ int main(int argc, char **argv) {
 
     printf("\nTesting Upload Speed... Please wait up to 60 seconds...\n");
 
-    const char *UPLOAD_FILE_PATH = "uptestfile.dat";
     double total_speed = 0;
     int successful_upload_tests = 0;
     
     for (int i = 0; i < 5; i++) {
         printf("\r"); // Move cursor to beginning of line
-        size_t bytes_sent = upload_with_timeout(UPLOAD_FILE_PATH, 15);
+        size_t bytes_sent = upload_with_timeout(15);
         uint32_t up_time_ms = retrieve_up_time();
         
         // Work with whatever is actually uploaded (likely 64KB chunks)

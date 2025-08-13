@@ -5,13 +5,12 @@
 #include <unistd.h>
 #include "uptest.h"
 #include <ogc/lwp_watchdog.h>
-#include <fat.h>
 #include <string.h>
 
 typedef struct {
-    FILE *file;
+    char *buffer;
+    size_t buffer_len;
     size_t total_bytes_sent;
-    size_t file_size;
     uint32_t start_time;
     uint32_t end_time;
     int timeout_seconds;
@@ -30,7 +29,7 @@ uint32_t retrieve_up_time() {
 
 size_t read_mime_callback(char *buffer, size_t size, size_t nitems, void *userp) {
     upload_data_t *upload_data = (upload_data_t*)userp;
-    size_t max_bytes = size * nitems;
+    size_t read_bytes = size * nitems;
     
     uint32_t current_time = ticks_to_millisecs(gettime());
     uint32_t elapsed = current_time - upload_data->start_time;
@@ -38,10 +37,14 @@ size_t read_mime_callback(char *buffer, size_t size, size_t nitems, void *userp)
         return 0;
     }
     
-    size_t bytes_read = fread(buffer, 1, max_bytes, upload_data->file);
-    upload_data->total_bytes_sent += bytes_read;
+    size_t max_bytes = upload_data->total_bytes_sent - upload_data->buffer_len;
+    if (max_bytes > read_bytes)
+        max_bytes = read_bytes;
+
+    memcpy(buffer, upload_data->buffer + upload_data->total_bytes_sent, max_bytes);
+    upload_data->total_bytes_sent += max_bytes;
     
-    return bytes_read;
+    return max_bytes;
 }
 
 // Callback for capturing response data
@@ -62,65 +65,19 @@ size_t write_response_callback(void *contents, size_t size, size_t nmemb, void *
     return realsize;
 }
 
-size_t upload_with_timeout(const char *file_path, int timeout_seconds) {
-    // Initialize FAT filesystem for SD card access
-    if (!fatInitDefault()) {
-        printf("Failed to initialize FAT filesystem\n");
-        return 0;
-    }
-    
-    // Try to open the upload test file, create if it doesn't exist
-    FILE *test_file = fopen("uptest1mb.dat", "rb");
-    if (!test_file) {
-        printf("Creating 1MB test file...\n");
-        
-        // Create the test file
-        FILE *create_file = fopen("uptest1mb.dat", "wb");
-        if (!create_file) {
-            printf("Failed to create test file\n");
-            return 0;
-        }
-        
-        // Write 1MB of data
-        char buffer[1024];
-        // Fill buffer with a simple pattern (added realism.)
-        for (int i = 0; i < 1024; i++) {
-            buffer[i] = (char)(i % 256);
-        }
-        
-        // Write 1024 chunks of 1KB = 1MB
-        for (int i = 0; i < 1024; i++) {
-            if (fwrite(buffer, 1, 1024, create_file) != 1024) {
-                printf("Error writing to test file\n");
-                fclose(create_file);
-                return 0;
-            }
-        }
-        
-        fclose(create_file);
-        printf("Test file created successfully\n");
-        
-        // Now open it for reading
-        test_file = fopen("uptest1mb.dat", "rb");
-        if (!test_file) {
-            printf("Failed to open created test file\n");
-            return 0;
-        }
-    }
-    
-    // Get file size
-    fseek(test_file, 0, SEEK_END);
-    long file_size = ftell(test_file);
-    fseek(test_file, 0, SEEK_SET);
-    
+size_t upload_with_timeout(int timeout_seconds) {
+    upload_data_t upload_data = {0};
     
     // Set up upload data structure
-    upload_data_t upload_data = {0};
-    upload_data.file = test_file;
-    upload_data.file_size = file_size;
+    upload_data.buffer_len = 0x100000; // 1MB;
+    upload_data.buffer = malloc(upload_data.buffer_len);
     upload_data.start_time = ticks_to_millisecs(gettime());
     upload_data.timeout_seconds = timeout_seconds;
     upload_data.total_bytes_sent = 0;
+
+    // We don't even have to put anything here, we just want to see how long it takes to upload X bytes of data
+    for (int i = 0; i < upload_data.buffer_len; i++)
+        upload_data.buffer[i] = -i;
     
     // Set up response capture
     response_data_t response = {0};
@@ -131,7 +88,7 @@ size_t upload_with_timeout(const char *file_path, int timeout_seconds) {
     if (curl) {
         curl_easy_setopt(curl, CURLOPT_URL, "https://file.io/");
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, file_size);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, upload_data.buffer_len);
         curl_easy_setopt(curl, CURLOPT_READFUNCTION, read_mime_callback);
         curl_easy_setopt(curl, CURLOPT_READDATA, &upload_data);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_response_callback);
@@ -155,7 +112,7 @@ size_t upload_with_timeout(const char *file_path, int timeout_seconds) {
         free(response.data);
     }
     
-    fclose(test_file);
+    free(upload_data.buffer);
     
     return upload_data.total_bytes_sent;
 }
