@@ -35,5 +35,5 @@ Use the `make` command to compile the application.
 ## Credits
 
 - **Made by**: Masaru Mamoru
-- **Peer Reviewed by**: Abdelali221
+- **Peer Reviewed by**: Abdelali221, Naim2000
 - **Year**: 2025
