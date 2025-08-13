@@ -193,7 +193,7 @@ int main(int argc, char **argv) {
     //Download Test
     printf("\nTesting Download Speed... Please wait up to 60 seconds...\n\n");
 
-    const char *DOWNLOAD_URL = "https://www.dropbox.com/scl/fi/c687z55w1vc0k53bd6ua0/downloadtest.dat?rlkey=d1hggbavph5vckpr9kqtiz4bd&st=6up0nd1c&dl=1";
+    const char *DOWNLOAD_URL = "https://github.com/KniteRite-Studios/TestMiiInternet/raw/refs/heads/main/downloadtest.dat"; // 100MB file for download test
     double total_download_speed = 0;
     int successful_download_tests = 0;
 
