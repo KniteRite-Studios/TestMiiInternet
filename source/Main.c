@@ -7,7 +7,6 @@
 #include <gccore.h>
 #include <wiiuse/wpad.h>
 #include <network.h>   // For net_init(), net_gethostip(), etc.
-#include <ogc/isfs.h>  // For ISFS_Initialize and ISFS file access
 #include <stdio.h>     // For printf, fprintf
 #include <stdlib.h>    // For exit
 #include <string.h>    // For strcpy()
@@ -23,8 +22,6 @@
 extern void curl_global_setup(void);
 extern void curl_global_cleanup_wrapper(void);
 extern double do_curl_ping(const char *url, long *http_code);
-
-static fstats filest __attribute__((aligned(32))); 
 
 static void *xfb = NULL;
 static GXRModeObj *rmode = NULL;
@@ -123,43 +120,40 @@ int main(int argc, char **argv) {
     printf("Wii IP Address: %s\n", ip_str);
     printf("MAC Address: %s\n", mac_str);
 
-    // READ ACTIVE CONNECTION NUMBER FROM config.dat (ISFS)
-    // Initialize ISFS for NAND file access
-    ISFS_Initialize(); // ISFS_Initialize should be called after network init if it relies on it, or before if independent.
 
     int active_conn = -1;
-    s32 fd = ISFS_Open("/shared2/sys/net/02/config.dat", ISFS_OPEN_READ);
-    int stat = ISFS_GetFileStats(fd, &filest);
-    if (!(fd >= 0 && stat == ISFS_OK)) {
-        printf("ISFS_GetFileStats error: %d\n", stat); // More descriptive error message
+    s32 fd = IOS_Open("/dev/net/ncd/manage", 0);
+    if (fd < 0) {
+        printf("Error opening network configuration device (%d)\n", fd);
+        return fd;
+    } else {
+        ioctlv vectors[2];
+        static const u32 netconfig_size = 0x1b5c;
+        unsigned char* netconfig = malloc(netconfig_size); // proper netconfig structure goes here
+        u32 outbuf[2];
+
+        memset(netconfig, 0, netconfig_size);
+
+        vectors[0].data = netconfig;
+        vectors[0].len  = netconfig_size;
+
+        vectors[1].data = outbuf;
+        vectors[1].len  = sizeof outbuf;
+
+        // `NCDGetIfConfig`
+        IOS_Ioctlv(fd, 3, 0, 2, vectors);
+        IOS_Close(fd);
+
+        for (int i = 0; i < 3; i++) {
+            if ((netconfig[8 + (i * 0x91c)] & 0xA0) == 0xA0) {
+                active_conn = i + 1;
+                break;
+            }
+        }
+
+        free(netconfig);
     }
 
-    if (fd >= 0) { // Check if fd is valid (not -1)
-        u8 c1 __attribute__((aligned(32))) = 0;
-        u8 c2 __attribute__((aligned(32))) = 0;
-        u8 c3 __attribute__((aligned(32))) = 0;
-
-        ISFS_Seek(fd, 8, 0);
-        int ret = ISFS_Read(fd, &c1,1);
-        if (ret < 0) { printf("Error reading byte 8: %d\n", ret); ISFS_Close(fd); exit(0); }
-
-        ISFS_Seek(fd, 2340, 0);
-        ret = ISFS_Read(fd, &c2, 1);
-        if (ret < 0) { printf("Error reading byte 2340: %d\n", ret); ISFS_Close(fd); exit(0); }
-
-        ISFS_Seek(fd, 4672, 0);
-        ret = ISFS_Read(fd, &c3, 1);
-        if (ret < 0) { printf("Error reading byte 4672: %d\n", ret); ISFS_Close(fd); exit(0); }
-
-        if (c1 >= 0xA0) { active_conn = 1; } 
-        else if (c2 >= 0xA0) { active_conn = 2; } 
-        else if (c3 >= 0xA0) { active_conn = 3; }
-        ISFS_Close(fd); // Close the file descriptor after reading
-    } else {
-        printf("Failed to open config.dat. FD: %d\n", fd); // More descriptive error
-        exit(0);
-    } 
-    
     // Connection Test
     printf("=========================================\n");
     printf("Testing Connection %d...\n", active_conn);
@@ -223,13 +217,12 @@ int main(int argc, char **argv) {
 
     printf("\nTesting Upload Speed... Please wait up to 60 seconds...\n");
 
-    const char *UPLOAD_FILE_PATH = "uptestfile.dat";
     double total_speed = 0;
     int successful_upload_tests = 0;
     
     for (int i = 0; i < 5; i++) {
         printf("\r"); // Move cursor to beginning of line
-        size_t bytes_sent = upload_with_timeout(UPLOAD_FILE_PATH, 15);
+        size_t bytes_sent = upload_with_timeout(15);
         uint32_t up_time_ms = retrieve_up_time();
         
         // Work with whatever is actually uploaded (likely 64KB chunks)
@@ -262,7 +255,6 @@ int main(int argc, char **argv) {
 
     // Cleanup before exiting the main loop
     curl_global_cleanup_wrapper(); // Clean up libcurl globally
-    ISFS_Deinitialize();           // De-initialize ISFS
     deinit_network();              // De-initialize the network
 
     printf("Press HOME button to exit.\n");

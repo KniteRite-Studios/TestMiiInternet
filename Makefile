@@ -34,7 +34,7 @@ LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-lfat -lwiiuse -lbte -lcurl -lz -lmbedtls -lmbedcrypto -lmbedx509 -lwiisocket -logc -lm
+LIBS	:=	-lwiiuse -lbte -lcurl -lz -lmbedtls -lmbedcrypto -lmbedx509 -lwiisocket -logc -lm
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
