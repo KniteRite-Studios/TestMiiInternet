@@ -2,6 +2,7 @@
 //KniteRite Studios
 //Masaru Mamoru, PR'd by Abdelali221
 //2025, August.
+//Release 1.1. 
 
 #include <gccore.h>
 #include <wiiuse/wpad.h>

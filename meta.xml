@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<app version="1.1">
+  <name>TestMiiInternet</name>
+  <coder>KniteRite Studios, Masaru Mamoru</coder>
+  <version>1.1</version>
+  <release_date>08/05/2025</release_date>
+  <short_description>A basic Wii Internet Speed Test.</short_description>
+  <long_description>Measures download and upload speeds and ping rate on the Nintendo Wii.
+
+Tests ping to Google.com, tests download rate to GitHub, and tests upload rate to file.io.
+Runs multiple tests, averages result! 
+
+Application may start with a black screen, this is normal on Real Hardware.
+Internet Speeds on real hardware are expected to be REALLY slow, less than 5mpbs on average. Please account for this.
+
+github.com/kniterite-studios/testmiiinternet</long_description>
+</app>
