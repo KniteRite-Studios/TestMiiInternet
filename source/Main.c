@@ -167,21 +167,39 @@ int main(int argc, char **argv) {
     long http_code = 0;
     double ping_time_ms = do_curl_ping(PING_URL, &http_code);
     int successful_tests = 0;
+    int retries = 0;
 
-    for (int i = 0; i < 4; i++) {
-        ping_time_ms = do_curl_ping(PING_URL, &http_code);
-
+    for (int i = 0; i < 5 + retries; i++) {
+        printf("\rPing! ");
+        ping_time_ms = do_curl_ping(PING_URL, &http_code) / 5;
+        printf("\rPing! Pong : %.2f     ", ping_time_ms);
         if (ping_time_ms < 0) {
-            printf("Ping test failed.\n");
+            printf("Ping test failed!");
+        } else if (i > 0 && ping_time_ms + .5 < (average_ping_time/i)) {
+            retries++;
+            average_ping_time = ping_time_ms;
+            successful_tests = 1;
+            i = 1;
+            if (retries == 6) {
+                retries = 0;
+                i = 5;
+            }
+        } else if (i > 0 && ping_time_ms > (average_ping_time/i) + 1) {
+            retries++;
+            if (retries == 6) {
+                retries = 0;
+                i = 5;
+            }
         } else {
             average_ping_time += ping_time_ms;
             successful_tests++;
         }
+        sleep(1);
     }
 
     int successful_ping_tests = successful_tests;
     if (successful_tests > 0) {
-        printf("Average ping to %s: %.2f ms\n", PING_URL, average_ping_time / successful_tests);
+        printf("\nAverage ping to %s: %.2f ms\n", PING_URL, average_ping_time / successful_tests);
     } else {
         printf("Ping tests failed.\n");
     }
@@ -248,8 +266,8 @@ int main(int argc, char **argv) {
 
 
     if (successful_tests == 14) {
-        printf("\nPING %.2f ms | DOWN %.2f Mbps | UP %.2f Mbps\n", 
-               average_ping_time / successful_ping_tests,
+        printf("\nOn average you have : \nPING %.2f ms | DOWN %.2f Mbps | UP %.2f Mbps\n", 
+               (average_ping_time / successful_ping_tests),
                total_download_speed / successful_download_tests,
                total_speed / successful_upload_tests);
     }
