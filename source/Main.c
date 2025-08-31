@@ -47,6 +47,7 @@ static void init_network() {
     s32 ret;
     ret = net_init();
     if (ret != 0) {
+        printf("failed! %d", ret);
         exit(1); 
     }
 }
@@ -84,9 +85,6 @@ int main(int argc, char **argv) {
     // --- NETWORK INIT AFTER VIDEO/CONSOLE ---
     char ip_str[16] = {0}; // Buffer to hold the IP address as a string (e.g., "192.168.1.100\0")
     char mac_str[18] = {0}; // Buffer to hold the MAC address as a string (e.g., "00:1A:2B:3C:4D:5E\0")
-    
-    // Initialize the network connection
-    init_network(); // Call the helper function
 
     // --- APP INFO ---
     printf("TestMiiInternet. Internet Speed Test for Wii\n");
@@ -94,6 +92,8 @@ int main(int argc, char **argv) {
     printf("Peer Reviewed by Abdelali221.\n");
     printf("=========================================\n");
     printf("Initializing network...\n"); // Print to console for debugging
+    // Initialize the network connection
+    init_network(); // Call the helper function
     s32 net_result = if_config(ip_str, NULL, NULL, TRUE, 2); // if_config handles net_init internally
 
     u8 mac_address_bytes[6] = {0}; // Declare a u8 array to hold the MAC bytes
