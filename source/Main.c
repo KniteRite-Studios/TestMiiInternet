@@ -68,6 +68,7 @@ int main(int argc, char **argv) {
     // --- VIDEO/CONSOLE INIT FIRST ---
     VIDEO_Init();
     WPAD_Init();
+    PAD_Init();
     rmode = VIDEO_GetPreferredMode(NULL);
     xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
     console_init(xfb, 20, 20, rmode->fbWidth-20, rmode->xfbHeight-20, rmode->fbWidth*VI_DISPLAY_PIX_SZ);
@@ -257,15 +258,18 @@ int main(int argc, char **argv) {
     curl_global_cleanup_wrapper(); // Clean up libcurl globally
     deinit_network();              // De-initialize the network
 
-    printf("Press HOME button to exit.\n");
+    printf("Press HOME (Start) button to exit.\n");
 
     while(1) {
         WPAD_ScanPads();
+        PAD_ScanPads();
+
         u32 pressed = WPAD_ButtonsDown(0);
+        u32 gcpressed = PAD_ButtonsDown(0);
 
         VIDEO_WaitVSync();
 
-        if (pressed & WPAD_BUTTON_HOME) {
+        if (pressed & WPAD_BUTTON_HOME || gcpressed & PAD_BUTTON_START) {
             printf("Exiting...\n");
             VIDEO_WaitVSync();
             exit(0); //END OF LINE
