@@ -2,8 +2,8 @@
 <app version="1.1">
   <name>TestMiiInternet</name>
   <coder>KniteRite Studios, Masaru Mamoru</coder>
-  <version>1.1</version>
-  <release_date>08/05/2025</release_date>
+  <version>1.2</version>
+  <release_date>20250904000000</release_date>
   <short_description>A basic Wii Internet Speed Test.</short_description>
   <long_description>Measures download and upload speeds and ping rate on the Nintendo Wii.
 
