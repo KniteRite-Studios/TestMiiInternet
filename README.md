@@ -36,4 +36,5 @@ Use the `make` command to compile the application.
 
 - **Made by**: Masaru Mamoru
 - **Peer Reviewed by**: Abdelali221, Naim2000
+- **Special Thanks to** : AndrewPiroli (The person behing Wii-cURL)
 - **Year**: 2025
