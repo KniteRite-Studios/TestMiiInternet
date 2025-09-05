@@ -1,7 +1,7 @@
 //TestMiiInternet
 //KniteRite Studios
 //Masaru Mamoru, PR'd by Abdelali221
-//2025, August.
+//2025, September.
 //Version 1.2. 
 
 #include <gccore.h>
@@ -45,7 +45,7 @@ void ClearScreen() {
 // Function to initialize the Wii's network interface
 static void init_network() {
     s32 ret;
-    ret = net_init();
+    ret = wiisocket_init();
     if (ret != 0) {
         printf("failed! %d", ret);
         exit(1); 
@@ -58,7 +58,6 @@ static void deinit_network() {
 }
 
 int main(int argc, char **argv) {
-    wiisocket_init();
     //---------------------------------------------------------------------------------
     // Button definitions
     SYS_SetResetCallback(WiiResetPressed);
@@ -93,8 +92,11 @@ int main(int argc, char **argv) {
     printf("Peer Reviewed by Abdelali221.\n");
     printf("=========================================\n");
     printf("Initializing network...\n"); // Print to console for debugging
+    VIDEO_WaitVSync();
+    
+    init_network();
     // Initialize the network connection
-    init_network(); // Call the helper function
+
     s32 net_result = if_config(ip_str, NULL, NULL, TRUE, 2); // if_config handles net_init internally
 
     u8 mac_address_bytes[6] = {0}; // Declare a u8 array to hold the MAC bytes
@@ -170,12 +172,13 @@ int main(int argc, char **argv) {
     int retries = 0;
 
     for (int i = 0; i < 5 + retries; i++) {
-        printf("\rPing! ");
+        printf("\x1b[2K\rPing! ");
         ping_time_ms = do_curl_ping(PING_URL, &http_code) / 5;
         printf("\rPing! Pong : %.2f     ", ping_time_ms);
         if (ping_time_ms < 0) {
             printf("Ping test failed!");
-        } else if (i > 0 && ping_time_ms + .5 < (average_ping_time/i)) {
+        } else /* if (i > 0 && ping_time_ms + 0.5 < (average_ping_time/i)) {
+            printf("  :3  ");
             retries++;
             average_ping_time = ping_time_ms;
             successful_tests = 1;
@@ -190,7 +193,7 @@ int main(int argc, char **argv) {
                 retries = 0;
                 i = 5;
             }
-        } else {
+        } else */ {
             average_ping_time += ping_time_ms;
             successful_tests++;
         }
@@ -265,7 +268,7 @@ int main(int argc, char **argv) {
     }
 
 
-    if (successful_tests == 14) {
+    if (successful_tests == 15) {
         printf("\nOn average you have : \nPING %.2f ms | DOWN %.2f Mbps | UP %.2f Mbps\n", 
                (average_ping_time / successful_ping_tests),
                total_download_speed / successful_download_tests,
