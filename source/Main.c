@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
     } else {
         ioctlv vectors[2];
         static const u32 netconfig_size = 0x1b5c;
-        unsigned char* netconfig = malloc(netconfig_size); // proper netconfig structure goes here
+        unsigned char* netconfig = malloc(netconfig_size);
         u32 outbuf[2];
 
         memset(netconfig, 0, netconfig_size);
@@ -160,8 +160,8 @@ int main(int argc, char **argv) {
     // Connection Test
     printf("=========================================\n");
     printf("Testing Connection %d...\n", active_conn);
-    const char *PING_URL = "http://google.com/"; // GATEWAY IP
-    printf("Pinging: %s\n", PING_URL);
+    const char *PING_URL = "http://google.com/";
+    printf("Pinging: %s please wait...\n", PING_URL);
     
     // Call the ping function from curlping.c
 
@@ -172,11 +172,12 @@ int main(int argc, char **argv) {
     int retries = 0;
 
     for (int i = 0; i < 5 + retries; i++) {
-        printf("\x1b[2K\rPing! ");
         ping_time_ms = do_curl_ping(PING_URL, &http_code) / 5;
-        printf("\rPing! Pong : %.2f     ", ping_time_ms);
+        // Commenting out function that I do NOT like, srry. - KR 
+        // printf("\rPing! Pong : %.2f     ", ping_time_ms);
         if (ping_time_ms < 0) {
             printf("Ping test failed!");
+            // Commenting out broken function for now.
         } else /* if (i > 0 && ping_time_ms + 0.5 < (average_ping_time/i)) {
             printf("  :3  ");
             retries++;
@@ -269,7 +270,7 @@ int main(int argc, char **argv) {
 
 
     if (successful_tests == 15) {
-        printf("\nOn average you have : \nPING %.2f ms | DOWN %.2f Mbps | UP %.2f Mbps\n", 
+        printf("\nRESULTS: \nPING %.2f ms | DOWN %.2f Mbps | UP %.2f Mbps\n", 
                (average_ping_time / successful_ping_tests),
                total_download_speed / successful_download_tests,
                total_speed / successful_upload_tests);
